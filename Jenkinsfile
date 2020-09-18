@@ -1,26 +1,36 @@
-node {
-    def app
-
-    stage('Clone repository') {
-        checkout scm
+pipeline {
+  environment {
+    registry = "mexdocker/nodetest"
+    registryCredential = 'docker-hub-credentials'
+    dockerImage = ''
+  }
+  agent any
+  stages {
+    stage('Cloning Git') {
+      steps {
+        git 'https://github.com/mexsad/hello-world.git'
+      }
     }
-
-    stage('Build image') {
-        app = docker.build("mexdocker/nodetest")
-    }
-
-    stage('Test image') {
-        app.inside {
-            sh 'echo "Tests passed"'
+    stage('Building image') {
+      steps{
+        script {
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
-
+      }
     }
-
-    stage('Push image') {
-
-        docker.withRegistry('https://hub.docker.com', 'docker-hub-credentials') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
+    stage('Deploy Image') {
+      steps{
+        script {
+          docker.withRegistry( '', registryCredential ) {
+            dockerImage.push()
+          }
         }
+      }
     }
+    stage('Remove Unused docker image') {
+      steps{
+        sh "docker rmi $registry:$BUILD_NUMBER"
+      }
+    }
+  }
 }
