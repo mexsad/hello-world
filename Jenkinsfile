@@ -6,7 +6,7 @@ node {
     }
 
     stage('Build image') {
-        app = docker.build("mexdocker/hello-world")
+        app = docker.build("mexdocker/nodetest")
     }
 
     stage('Test image') {
